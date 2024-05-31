@@ -1,0 +1,347 @@
+import random
+
+def generate_uniform_random(lower_bound, upper_bound):#fonction qui génére des valeurs aléatoires en utilisant la distribution uniforme
+        return random.uniform(lower_bound, upper_bound)  
+
+
+def generate_demand(fixed_price, a, b):# fonction qui calcule la demande à partir de la liste des prix
+      if a >= 0:
+         raise ValueError("La pente 'a' doit être négative.")
+      demand_quantity = int(a * fixed_price + b)  
+      while demand_quantity <= 0:
+       demand_quantity = int(a * fixed_price + b)
+      return demand_quantity
+      
+
+class ProductionData:
+    def __init__(self):
+        self.reprocessing_operations = {"Cleaning": ["RW1", "RW2"],"Inspection": ["RW3", "RW4", "RW5"],"Repair": ["RW6"],"Reconditioning": ["RW7", "RW8", "RW9"],}
+        self.number_of_machines = {
+             "TW": 2,  # testing machines
+             "DW": 7,  # disassembling machines
+             "AW": 2,  # assembling machines
+             "RW": 9   # reprocessing machines
+                                               }
+
+        self.price_manufactured_products = random.sample(range(1, 5), 2)  # liste des prix des produits à Man
+
+
+        print("List of manufactured prices:", self.price_manufactured_products)
+
+        manufactured_demands = [] # liste des demandes des produits à Man
+        for price in self.price_manufactured_products:
+          manufactured_demand = generate_demand(price, -1, 7)
+          manufactured_demands.append(manufactured_demand)
+        print("List of Man demand",manufactured_demands)
+
+
+        self.price_remanufactured_products = [random.randint(100, 200) for _ in range(2)]
+        while self.price_remanufactured_products == self.price_manufactured_products:
+            self.price_remanufactured_products = [random.randint(100, 200) for _ in range(2)]
+        print("List of remanufactured prices:", self.price_remanufactured_products)
+     
+
+        remanufactured_demands = [] # liste des demandes des produits à Reman
+        for price in self.price_remanufactured_products:
+          remanufactured_demand = generate_demand(price, -1, 200)
+          remanufactured_demands.append(remanufactured_demand)
+        print("List of reman demand",remanufactured_demands)
+
+
+        # Choix random du prix du pdt à manufacturé
+
+        random_manufactured_price_index = random.randint(0, len(self.price_manufactured_products) - 1) 
+        manprice = self.price_manufactured_products[random_manufactured_price_index]
+        mandemand = manufactured_demands[random_manufactured_price_index]
+        print("Manprice is",manprice)
+        print("Mandemand is",mandemand)
+
+
+        # Choix random du prix du pdt à remanufacturé
+        random_remanufactured_price_index = random.randint(0, len(self.price_remanufactured_products) - 1) 
+        remanprice = self.price_remanufactured_products[random_remanufactured_price_index]
+        remandemand = remanufactured_demands[random_remanufactured_price_index]
+        print("Remanprice is",remanprice)
+        print("Remandemand is",remandemand)
+
+
+
+        # Ici je mets la durée de manufacturing qui est la même pour tous les produits que ce soit pour le testing ou assembling
+        mantesting_duration = generate_uniform_random(1, 5)
+        print("Mantesting_duration",mantesting_duration)
+        manassembling_duration = generate_uniform_random(2, 8)
+        print("Manassembling_duration",manassembling_duration)
+         # Ici je mets le cost de Man est le même pour tous les produits
+        mancost= generate_uniform_random(1, 2)
+        print("Mancost",mancost)
+
+
+        # Ici je mets la durée de testing pour remanufactured products
+        self.Remantesting_duration = generate_uniform_random(1, 5)
+        print("Remantesting_duration",self.Remantesting_duration)
+
+        
+        self.quality_to_component_count = {"high": 1,"medium": 2,"low": 3} #ici pour chaque qualité on aura le nombre de composants pour lequel il va être décomposé
+
+
+        
+        remanufactured_product_qualities = []
+        qualities = list(self.quality_to_component_count.keys())
+
+        for e in range(remandemand):  #ici on va entrer les qualités des produits à remanufacturés après avoir être testés
+         self.quality_level = random.choice(qualities) 
+         remanufactured_product_qualities.append(self.quality_level)  
+         self.num_components = self.quality_to_component_count[self.quality_level]
+         print(f"Qualité du produit{e+1}: {self.quality_level} , Nombre de composants: {self.num_components}")
+
+        
+
+#-----------------------------ici on va généré les durées de disassembling et assembling en tenant compte de la qualité du pdt entréé par l'utilisateur--------------------------------
+         
+         
+         self.disassembly_durations = []
+         self.assembling_durations = []
+         self.costreman = []#ici je rajoute le coût de remanufacturing qui dépend de la qualité
+         for quality, _ in zip(remanufactured_product_qualities, range(remandemand)):
+          if quality == "low":
+             disassembly_duration = generate_uniform_random(10, 11) 
+             remanassassembly_duration = generate_uniform_random(10, 11)
+             costreman = generate_uniform_random(10, 11) 
+          elif quality =="medium":
+             disassembly_duration = generate_uniform_random(8, 9)
+             remanassassembly_duration = generate_uniform_random(8, 9)
+             costreman = generate_uniform_random(8, 9)
+          else:
+             disassembly_duration = generate_uniform_random(3, 4)
+             remanassassembly_duration = generate_uniform_random(3, 4)
+             costreman = generate_uniform_random(3, 4)
+          self.disassembly_durations.append(disassembly_duration)
+          self.assembling_durations.append(remanassassembly_duration)
+          self.costreman.append(costreman)
+         print(f"Le produit{_+1} de qualité {quality} coûte {costreman}")
+
+
+          
+
+        
+
+#--------------------------ici on s'interesse aux composants leurs opérations et la durée de ces opérations aléatoirement générée-------------------------------------------------------
+        
+        
+        operation_dict = {op: [] for op in self.reprocessing_operations.keys()}
+        self.component_operations = []
+        for product_index, quality in enumerate(remanufactured_product_qualities):
+           product_operations = []
+           for component_index in range(self.quality_to_component_count[quality]):
+              component_name = f"Composant_{component_index + 1}"
+              num_operations = random.randint(1, len(self.reprocessing_operations))
+              chosen_operations = random.sample(list(self.reprocessing_operations.keys()), num_operations)
+
+              component_operations = {}
+              for operation_name in chosen_operations:
+                 operation_duration = generate_uniform_random(1, 10)
+                 component_operations[operation_name] = operation_duration
+                 component_id = f"C{product_index + 1}{component_name.split('_')[1]}"
+                 operation_dict[operation_name].append({component_id: operation_duration})
+
+              product_operations.append({component_name: component_operations})
+
+           self.component_operations.append({"product_index": product_index + 1, "operations": product_operations})
+           
+              
+
+        print("Composant | Opérations et Durées (Avant tri)")
+        print("-" * 40)
+        for product in self.component_operations:
+           product_index = product["product_index"]
+           for component in product["operations"]:
+              for component_name, ops in component.items():
+                 component_id = f"C{product_index}{component_name.split('_')[1]}"
+                 print(f"{component_id:10} | {', '.join([f'{op_name}: {duration:.2f}' for op_name, duration in ops.items()])}")
+
+        print("\n") 
+
+        print("Liste des composants par opération :")
+        for op_name, components in operation_dict.items():
+           print(f"Opération {op_name}:")
+           for component in components:
+              for component_id, duration in component.items():
+                 print(f"  - {component_id}: {duration:.2f}")
+
+
+                 
+        for op_name in operation_dict:
+         operation_dict[op_name].sort(key=lambda x: list(x.values())[0])
+
+        print("Liste des composants par opération (Triée par durée) :")
+        for op_name, components in operation_dict.items():
+           print(f"Opération {op_name}:")
+           for component in components:
+              for component_id, duration in component.items():
+                 print(f"  - {component_id}: {duration:.2f}")
+        
+
+
+       
+         
+           
+#--------------------------------------------------Machine assignmnent for testing and disassembling(Reman product)--------------------------------------------------------------------
+        rw_completion_times = {rw: 0 for rw_list in self.reprocessing_operations.values() for rw in rw_list}
+        product_reprocessing_times = {}
+        component_completion_times = {}
+        available_machines = self.number_of_machines["TW"]
+        availableDisassemblingMachine = self.number_of_machines["DW"]
+        products_remaining = remandemand 
+        self.machine_completion_times = [0] * self.number_of_machines["TW"]
+        disassembly_completion_times = [0] * self.number_of_machines["DW"]
+        product_disassembly_completion_times = {}
+        
+
+        while products_remaining > 0:
+          for machine_id in range(available_machines):
+           if products_remaining > 0:
+            product_number = remandemand - products_remaining + 1
+            print(f"Remanufactured Product {product_number} is assigned to TW {machine_id + 1}")
+            products_remaining -= 1
+            # Printing the start time of testing
+            start_testing_time = self.machine_completion_times[machine_id]
+
+            self.machine_completion_times[machine_id] += self.Remantesting_duration
+            completion_time = self.machine_completion_times[machine_id]
+            print(f"Testing Duration for Remanufactured Product {product_number}: {self.Remantesting_duration} units of time. Product {machine_id + 1} will start at {start_testing_time} and finish at {self.machine_completion_times[machine_id]}")
+
+            min_completion_index = disassembly_completion_times.index(min(disassembly_completion_times))
+            disassembly_duration = self.disassembly_durations[product_number - 1]
+            disassembly_completion_times[min_completion_index] = max(disassembly_completion_times[min_completion_index], completion_time) + disassembly_duration
+
+            # Printing the start time of disassembly
+            start_disassembly_time = disassembly_completion_times[min_completion_index] - disassembly_duration
+            print(f"Remanufactured Product {product_number} (Quality: {remanufactured_product_qualities[product_number - 1]}) is assigned to Disassembling Machine {min_completion_index + 1} from {start_disassembly_time} will finish  {disassembly_completion_times[min_completion_index]:.2f}" )
+            print(f"Disassembling Duration for Remanufactured Product {product_number}: {disassembly_duration:.2f} units of time.")
+            product_disassembly_completion_times[product_number] = disassembly_completion_times[min_completion_index]
+
+        last_machine_completion_time = max(self.machine_completion_times)
+        last_machine_index = self.machine_completion_times.index(last_machine_completion_time)
+
+        print("All remanufactured products have been tested and disassembled.")
+
+
+
+ #-----------------------------------------Reprocessing after testing and disassembling (Reman product) -------------------------------------------------------------------------------
+        rw_availability = {rw: 0 for rws in self.reprocessing_operations.values() for rw in rws}
+        component_end_times = {}
+        component_latest_op_end_time = {}
+        product_latest_reprocessing_end_time = {}
+
+        print("Attribution des composants aux RWs :")
+        # Créer une liste triée des opérations
+        sorted_operations = sorted(operation_dict.items())
+
+        for op_name, components in sorted_operations:
+            for component in components:
+                component_id, duration = list(component.items())[0]
+                product_index = int(component_id[1])
+                product_disassembly_time = product_disassembly_completion_times[product_index]
+                rws = self.reprocessing_operations[op_name]
+                earliest_rw = min(rws, key=lambda rw: rw_availability[rw])
+                last_op_end_time = component_end_times.get(component_id, product_disassembly_time)
+                last_op_end_time = component_latest_op_end_time.get(component_id, product_disassembly_time)
+                start_time = max(rw_availability[earliest_rw], last_op_end_time)
+                end_time = start_time + duration
+                rw_availability[earliest_rw] = end_time
+                component_end_times[component_id] = end_time
+                component_latest_op_end_time[component_id] = end_time
+                product_latest_reprocessing_end_time[product_index] = max(product_latest_reprocessing_end_time.get(product_index, 0), end_time)
+                print(f"Composant {component_id} assigné à {earliest_rw} pour {op_name} de {start_time:.2f} à {end_time:.2f}")
+
+        print("\nTemps de fin de chaque composant :")
+        for component_id, end_time in component_end_times.items():
+            print(f"Composant {component_id}: {end_time:.2f}")
+
+        print("\nTemps de fin de retraitement pour chaque produit :")
+        for product_index, end_time in product_latest_reprocessing_end_time.items():
+         print(f"Produit {product_index}: {end_time:.2f}")
+
+
+
+#------------------------------------------------------Machine assignmnent for assembling Manproducts/Reman products----------------------------------------------------------------------------------------------
+      
+        availablemachines = self.number_of_machines["AW"]
+        total_products = mandemand + remandemand
+        self.machinecompletion_times = [0] * availablemachines
+        products_man = mandemand
+        products_reman = remandemand
+        manufactured_completion_times = []
+
+        last_remanufactured_end_time = 0
+
+        while total_products > 0:
+          for _ in range(availablemachines):
+        # Trouver la machine qui sera disponible le plus tôt
+           earliest_machine = self.machinecompletion_times.index(min(self.machinecompletion_times))
+
+           if products_man > 0:
+              product_number = mandemand - products_man + 1
+              start_time = self.machinecompletion_times[earliest_machine]
+              end_time = start_time + manassembling_duration
+              print(f"Produit manufacturé {product_number} est assigné à la Machine {earliest_machine + 1}")
+              print(f"Produit manufacturé {product_number} commence à {start_time:.2f} et finit à {end_time:.2f}")
+              products_man -= 1
+              self.machinecompletion_times[earliest_machine] = end_time
+              manufactured_completion_times.append(end_time)
+              print(f"Durée d'assemblage pour le produit manufacturé {product_number} : {manassembling_duration} unités de temps.")
+           elif products_reman > 0:
+              product_number = remandemand - products_reman + 1
+              previous_end_time = product_latest_reprocessing_end_time.get(product_number, 0)
+              start_time = max(self.machinecompletion_times[earliest_machine], previous_end_time)
+              assembling_duration = self.assembling_durations[product_number-1]   
+              end_time = start_time + assembling_duration
+              print(f"Produit remanufacturé {product_number} est assigné à la Machine {earliest_machine + 1}")
+              print(f"Produit remanufacturé {product_number} commence à {start_time:.2f} et finit à {end_time:.2f}")
+              products_reman -= 1
+              product_latest_reprocessing_end_time[product_number - 1] = end_time
+              self.machinecompletion_times[earliest_machine] = end_time
+              last_remanufactured_end_time = end_time
+              print(f"Durée d'assemblage pour le produit remanufacturé {product_number} : {assembling_duration} unités de temps. ")
+
+           total_products -= 1
+           if total_products == 0:
+            break
+
+        last_machinecompletion_time = max(self.machinecompletion_times)
+        lastmachine_index = self.machinecompletion_times.index(last_machinecompletion_time)
+        print(f"Le dernier produit a fini d'être assemblé à la Machine {lastmachine_index + 1} à {last_machinecompletion_time:.2f}")
+
+
+#------------------------------------------------------Machine assignmnent for testing Manproducts----------------------------------------------------------------------------------------------
+        testing_completion_times = [0] * self.number_of_machines["TW"]
+        for product_number, manufactured_end_time in enumerate(manufactured_completion_times, start=1):
+          earliest_testing_machine = testing_completion_times.index(min(testing_completion_times))
+          start_time = max(testing_completion_times[earliest_testing_machine], manufactured_end_time,last_machine_completion_time)
+          end_time = start_time + self.Remantesting_duration
+          print(f"Manufactured Product {product_number} testing starts at {start_time:.2f} and finishes at {end_time:.2f} on TW {earliest_testing_machine + 1}")
+          testing_completion_times[earliest_testing_machine] = end_time
+        makespanman=max(testing_completion_times)
+        Makespan=max(makespanman,last_remanufactured_end_time)
+        print("Le Cmax de Man:",makespanman)
+        print("Le Cmax de Reman:",last_remanufactured_end_time)
+        print("Le Makespan:",Makespan)
+
+                     
+
+
+
+
+#----------------------------------------------------Calculating the profit(1rst objective function)-----------------------------------------------------------------------------------
+        
+        
+        manufactured_profit = mandemand * (manprice - mancost)
+        remanufactured_profit = (remanprice * remandemand) - sum(self.costreman)
+        total_profit = manufactured_profit + remanufactured_profit
+
+        print(f"Manufactured Profit: {manufactured_profit:.2f}")
+        print(f"Remanufactured Profit: {remanufactured_profit:.2f}")
+        print(f"Total Profit: {total_profit:.2f}")
+    
+
+
